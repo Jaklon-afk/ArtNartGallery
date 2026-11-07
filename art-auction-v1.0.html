@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The ArtNart Gallery</title>
+<meta name="version" content="1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<style>
+:root{color-scheme:light dark;--bg:#f1f8f2;--sf:#fff;--tx:#14261a;--mu:#587060;--g:#1f8a4c;--gd:#146b3a;--gl:#dcefe2;--bd:#cde2d3;--rd:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a11;--sf:#16271c;--tx:#e6f2e9;--mu:#9bb5a2;--g:#3fbf72;--gd:#2e9e5a;--gl:#1d3a27;--bd:#2a4634;--rd:#ff7b6b}}
+:root[data-theme="dark"]{--bg:#0d1a11;--sf:#16271c;--tx:#e6f2e9;--mu:#9bb5a2;--g:#3fbf72;--gd:#2e9e5a;--gl:#1d3a27;--bd:#2a4634;--rd:#ff7b6b}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--g);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:1.2rem;margin:0;flex:1}
+main{max-width:980px;margin:0 auto;padding:16px}
+h2{color:var(--g);margin:24px 0 10px}
+button{font:inherit;border:1px solid var(--bd);background:var(--sf);color:var(--tx);padding:8px 14px;border-radius:10px;cursor:pointer}
+button.pri{background:var(--g);color:#fff;border-color:var(--g);font-weight:600}
+button.pri:disabled{opacity:.5}button.dng{color:var(--rd)}
+header select{width:auto;margin:0;padding:7px 8px;background:#ffffff26;color:#fff;border-color:#ffffff55}header option{color:#000}
+header button{background:#ffffff26;color:#fff;border-color:#ffffff55}
+input,textarea,select{width:100%;font:inherit;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);margin:3px 0 10px}
+label{display:block;font-size:.85rem;color:var(--mu)}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.grid img,.ph{width:100%;aspect-ratio:16/10;object-fit:contain;background:var(--gl);display:block}
+.ph{background:linear-gradient(135deg,var(--gl),var(--g));display:grid;place-items:center;font-size:2rem}
+.cb{padding:12px}.cb h3{margin:0}.by{color:var(--mu);font-size:.9rem}
+.price{color:var(--g);font-weight:700;font-size:1.1rem}
+.tag{display:inline-block;background:var(--gl);color:var(--gd);border-radius:20px;padding:1px 9px;font-size:.78rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{position:relative;display:grid;place-items:center;overflow:hidden;padding:6px 0 14px}
+.pt{color:var(--g);font-size:1.6rem;line-height:1;z-index:2}
+.wheel{position:relative;border-radius:50%;background:radial-gradient(circle,var(--gl) 0,var(--sf) 70%);border:3px solid var(--g);transition:transform 3.6s cubic-bezier(.15,.8,.2,1);max-width:100%}
+.tile{position:absolute;left:50%;top:50%;width:64px;height:64px;padding:0;border-radius:50%;overflow:hidden;border:3px solid var(--g);transition:transform 3.6s cubic-bezier(.15,.8,.2,1)}
+.tile img,.tile .ph{width:100%;height:100%;aspect-ratio:1;font-size:1.2rem}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#ov{position:fixed;inset:0;background:#000a;display:none;z-index:20;overflow:auto;padding:16px}
+#ov .m{max-width:640px;margin:20px auto;background:var(--sf);border-radius:16px;padding:18px;border:1px solid var(--bd)}
+.m img,.m video{width:100%;border-radius:10px;margin-bottom:8px}
+.bell{position:relative}.bd{background:var(--rd);color:#fff;border-radius:10px;padding:0 6px;font-size:.75rem;margin-left:4px}
+.note{border-left:4px solid var(--g);padding:8px 12px;margin:8px 0;background:var(--sf);border-radius:8px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--gd);color:#fff;padding:10px 16px;border-radius:12px;display:none;z-index:30;max-width:90%}
+.clk{cursor:pointer}.thumbs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}.th{flex:none;width:64px;height:48px;padding:0;overflow:hidden;border-radius:8px;border:2px solid var(--bd)}.th.on{border-color:var(--g)}.th img,.th .ph{width:100%;height:100%;margin:0;border-radius:0;aspect-ratio:auto;font-size:1.1rem}.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.facts div{background:var(--gl);border-radius:10px;padding:8px 10px}.facts span{display:block;font-size:.75rem;color:var(--mu)}
+.muted{color:var(--mu)}.err{color:var(--rd)}
+.car{display:flex;align-items:center;gap:6px}
+.track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;flex:1;min-width:0;scrollbar-width:none;padding:4px 2px}
+.track::-webkit-scrollbar{display:none}
+.slide{flex:0 0 min(260px,76%);scroll-snap-align:start}
+.slide img,.slide .ph{width:100%;aspect-ratio:16/10;height:auto;object-fit:contain;background:var(--gl);display:block}
+.m img,.m video{max-height:60vh;object-fit:contain;background:var(--bg)}
+.nav{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:1.5rem;line-height:1;background:var(--g);color:#fff;border-color:var(--g)}
+.hero{position:relative}.hero .track{gap:0;padding:0;border-radius:16px}.hero .nav{position:absolute;top:50%;transform:translateY(-50%);z-index:3}.nav.l{left:8px}.nav.r{right:8px}
+.hslide{flex:0 0 100%;scroll-snap-align:start;position:relative;height:clamp(260px,50vw,460px);overflow:hidden;cursor:pointer;background:var(--gl)}
+.hbg{position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(22px) brightness(.85)}
+.hfg{position:relative;width:100%;height:100%;object-fit:contain;display:block}.hslide .ph{aspect-ratio:auto;height:100%}
+.cap{position:absolute;left:0;right:0;bottom:0;padding:44px 64px 14px;color:#fff;background:linear-gradient(transparent,#000c)}.cap h2{margin:0;color:#fff}.cap .tag{margin-top:6px}
+.dots{display:flex;justify-content:center;gap:9px;margin:12px 0 4px}.dot{width:12px;height:12px;border-radius:50%;padding:0;border:none;background:var(--bd)}.dot.on{background:var(--g);transform:scale(1.3)}
+</style></head><body>
+<header><h1>🎨 The ArtNart Gallery</h1><span id="sync" style="font-size:.8rem"></span>
+<button id="bellB" class="bell" style="display:none" onclick="document.getElementById('adm').scrollIntoView()">🔔<span id="bn" class="bd">0</span></button>
+<select id="langS" onchange="setLang(this.value)" aria-label="Language"><option value="en">English</option><option value="pl">Polski</option></select>
+<select id="curS" onchange="setCur(this.value)" aria-label="Currency"><option>GBP</option><option>USD</option><option>PLN</option></select>
+<button id="loginB" onclick="loginM()">Admin login</button></header>
+<main>
+<p class="muted">Original artwork, sold by auction only. Browse the collection, find a piece you love, and place your bid before the clock runs out.</p>
+<h2>Featured pieces</h2>
+<div class="hero"><button class="nav l" onclick="slide(-1)" aria-label="Previous">‹</button><div id="wheelBox" class="track"></div><button class="nav r" onclick="slide(1)" aria-label="Next">›</button></div>
+<div id="dots" class="dots"></div>
+<h2>All pieces</h2>
+<div class="row" style="margin-bottom:12px"><input id="q" placeholder="🔍 Search title or artist" oninput="rGrid()" style="flex:1;min-width:150px;margin:0"><select id="flt" onchange="rGrid()" style="width:auto;margin:0"><option value="all">All</option><option value="live">Live auctions</option><option value="ended">Ended</option><option value="fav">♥ Favourites</option></select><select id="srt" onchange="rGrid()" style="width:auto;margin:0"><option value="end">Ending soon</option><option value="new">Newest</option><option value="lo">Price: low to high</option><option value="hi">Price: high to low</option></select></div><div id="grid" class="grid"></div>
+<section id="adm" style="display:none"><h2>Admin board</h2><div id="stats" class="facts"></div><div id="notes"></div>
+<div class="row"><h2 style="margin:10px 0">Pieces</h2><button class="pri" onclick="editArt()">+ New piece</button></div><div id="alist" class="grid"></div></section>
+<footer class="muted" style="text-align:center;padding:24px 0 12px;font-size:.85rem">The ArtNart Gallery · v1.0</footer>
+</main>
+<input type="file" id="quick" accept="image/*" style="display:none">
+<div id="ov"></div><div id="toast"></div>
+<script>
+const SB_URL="https://mvjmbegwqkxinpqtacug.supabase.co",SB_KEY="sb_publishable_G5tTq6z-Hypg9Oj3_Ls4eg_wuUxZXIw";
+let db=null,assets=null,arts=[],bids=[],ships=[],admin=false,ang=0,cur=null,seenEnd={};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safe=u=>/^(https?:\/\/|\/_blob\/|data:image\/)/.test(u||"")?u:"";
+const topBid=a=>bids.filter(b=>b.art===a.id).sort((x,y)=>y.amount-x.amount||x.at-y.at)[0];
+const price=a=>{const t=topBid(a);return t?t.amount:Number(a.start||0)};
+const ended=a=>Date.now()>=a.endsAt;
+const toast=m=>{const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(t._t);t._t=setTimeout(()=>t.style.display="none",3500)};
+const pic=(u,e)=>safe(u)?`<img src="${esc(safe(u))}" alt="">`:`<div class="ph">🖼️</div>`;
+const lt=ms=>new Date(ms-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+function left(ms){let s=Math.max(0,Math.floor((ms-Date.now())/1e3));const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+"d ":"")+h+(lang==="pl"?"g ":"h ")+m+"m "+s%60+"s"}
+const cd=a=>ended(a)?`<span class="tag">Ended</span>`:`⏳ <span data-end="${a.endsAt}">${left(a.endsAt)}</span>`;
+
+const CUR={GBP:{p:"\u00a3",r:1},USD:{p:"$",r:1.32},PLN:{s:" z\u0142",r:4.87}}; // base currency is GBP: 1 GBP = r units
+let cc="GBP";try{cc=localStorage.getItem("cur")||"GBP"}catch(e){}if(!CUR[cc])cc="GBP";$("#curS").value=cc;
+function fmt(v){const c=CUR[cc];return(c.p||"")+(Math.round(v*c.r*100)/100).toLocaleString(lang==="pl"?"pl":"en",{maximumFractionDigits:2})+(c.s||"")}
+async function rates(){try{const r=await fetch("https://open.er-api.com/v6/latest/GBP"),j=await r.json();if(j.rates&&j.rates.USD&&j.rates.PLN){CUR.USD.r=j.rates.USD;CUR.PLN.r=j.rates.PLN;render()}}catch(e){}}
+rates();setInterval(rates,36e5);
+function setCur(v){cc=v;try{localStorage.setItem("cur",v)}catch(e){}closeM();render()}
+let sb=null;
+async function save(c,id,d,upd){
+  if(!sb)return toast("Add your Supabase keys first");
+  let r;
+  if(upd){const o=(c==="art"?arts:c==="ship"?ships:bids).find(x=>x.id===id)||{};const{id:_i,confirmed:_c,...rest}=o;r=await sb.from(c).update({data:{...rest,...d}}).eq("id",id)}
+  else r=await sb.from(c).insert({id,data:d});
+  if(r.error)toast("Could not save: "+r.error.message);else load();
+}
+async function del(c,id){if(!sb)return;const r=await sb.from(c).delete().eq("id",id);if(r.error)toast("Could not delete: "+r.error.message);else load()}
+const rows=r=>(r.data||[]).map(x=>({id:x.id,...x.data}));
+async function load(){
+  const[a,b,s2,c]=await Promise.all(["art","bids","ship","confirmed"].map(t=>sb.from(t).select("*")));
+  const conf=new Set((c.data||[]).map(x=>x.id));
+  arts=rows(a);arts.forEach(x=>x.confirmed=conf.has(x.id));bids=rows(b);ships=rows(s2);render();
+}
+async function init(){
+  if(SB_URL.startsWith("PASTE")){$("#sync").textContent="Setup needed: add Supabase keys";render();return}
+  sb=supabase.createClient(SB_URL,SB_KEY);assets=true;
+  const{data}=await sb.auth.getSession();admin=!!data.session;
+  sb.auth.onAuthStateChange((_e,ss)=>{const n=!!ss;if(n!==admin){admin=n;load()}});
+  await load();
+  sb.channel("live").on("postgres_changes",{event:"*",schema:"public"},()=>load()).subscribe(st=>{if(st==="SUBSCRIBED")$("#sync").textContent="● live"});
+  setInterval(load,30000);
+}
+function render(){rWheel();rGrid();rAdmin()}
+
+let hi=0,ap,hov=false;
+const feats=()=>arts.filter(a=>a.feat);
+function rWheel(){
+  const b=$("#wheelBox"),L=feats();$("#dots").innerHTML="";
+  if(!L.length){b.innerHTML=`<div class="hslide" style="cursor:default;height:180px;display:grid;place-items:center"><p class="muted">No featured pieces yet \u2014 the artist will pick some soon. \ud83c\udf31 Scroll down to see everything.</p></div>`;return}
+  if(hi>=L.length)hi=0;
+  b.innerHTML=L.map(a=>{const u=safe(a.cover||a.img),cu=encodeURI(u).replace(/\(/g,"%28").replace(/\)/g,"%29");return`<div class="hslide" onclick="view('${a.id}')">${u?`<div class="hbg" style="background-image:url(${esc(cu)})"></div><img class="hfg" src="${esc(u)}" alt="">`:`<div class="ph hfg">\ud83d\uddbc\ufe0f</div>`}<div class="cap"><h2>${esc(a.title)}</h2><div>by ${esc(a.by)}</div><div><b>${ended(a)?"Final bid":"Current bid"}: ${fmt(price(a))}</b> \u00b7 ${cd(a)}</div><span class="tag">View details \u2192</span></div></div>`}).join("");
+  $("#dots").innerHTML=L.map((a,k)=>`<button class="dot${k===hi?" on":""}" onclick="goF(${k})" aria-label="Featured piece ${k+1}"></button>`).join("");
+  b.scrollLeft=hi*b.clientWidth;
+}
+function dotsOn(){document.querySelectorAll(".dot").forEach((d,k)=>d.classList.toggle("on",k===hi))}
+function goF(k){const b=$("#wheelBox");hi=k;b.scrollTo({left:k*b.clientWidth,behavior:"smooth"});dotsOn();auto()}
+function slide(d){const n=feats().length;if(n)goF((hi+d+n)%n)}
+function auto(){clearInterval(ap);ap=setInterval(()=>{if(!hov&&feats().length>1&&!$("#ov").innerHTML)slide(1)},15000)}
+$("#wheelBox").addEventListener("scroll",()=>{const b=$("#wheelBox"),k=Math.round(b.scrollLeft/(b.clientWidth||1));if(k!==hi&&k<feats().length){hi=k;dotsOn()}});
+$(".hero").onmouseenter=()=>hov=true;$(".hero").onmouseleave=()=>hov=false;auto();
+let fav=[];try{fav=JSON.parse(localStorage.getItem("fav")||"[]")}catch(e){}
+function togFav(id){fav=fav.includes(id)?fav.filter(x=>x!==id):[...fav,id];try{localStorage.setItem("fav",JSON.stringify(fav))}catch(e){}rGrid()}
+function rGrid(){
+  const q=$("#q").value.trim().toLowerCase(),f=$("#flt").value,o=$("#srt").value;
+  const L=arts.filter(a=>(!q||(a.title+" "+a.by).toLowerCase().includes(q))&&(f==="all"||(f==="live"&&!ended(a))||(f==="ended"&&ended(a))||(f==="fav"&&fav.includes(a.id))));
+  L.sort(o==="end"?(x,y)=>(ended(x)-ended(y))||x.endsAt-y.endsAt:o==="new"?(x,y)=>(y.created||0)-(x.created||0):o==="lo"?(x,y)=>price(x)-price(y):(x,y)=>price(y)-price(x));
+  $("#grid").innerHTML=L.length?L.map(a=>{const soon=!ended(a)&&a.endsAt-Date.now()<864e5,nb=bids.filter(b=>b.art===a.id).length;
+  return`<div class="card"><div class="clk" onclick="view('${a.id}')">${pic(a.cover||a.img)}</div><div class="cb"><h3 class="clk" onclick="view('${a.id}')">${esc(a.title)}</h3><div class="by">by ${esc(a.by)} ${a.video||a.vids?'<span class="tag">\u25b6 video</span>':""} ${soon?'<span class="tag">\ud83d\udd25 ending soon</span>':""}</div><div class="price">${fmt(price(a))}</div><div class="by">${cd(a)} \u00b7 ${nb?nb+" bid(s)":"no bids yet"}</div><div class="row" style="margin-top:8px"><button class="pri" onclick="view('${a.id}')">${ended(a)?"View":"Buy / Bid"}</button><button onclick="togFav('${a.id}')" aria-label="Favourite">${fav.includes(a.id)?"\u2665":"\u2661"}</button></div></div></div>`}).join(""):`<p class="muted">Nothing matches.</p>`;
+}
+function modal(h){const o=$("#ov");o.innerHTML=`<div class="m">${h}</div>`;o.style.display="block"}
+function closeM(){$("#ov").style.display="none";$("#ov").innerHTML=""}
+let _md=[];
+const lines=t=>String(t||"").split(/\n/).map(x=>x.trim()).filter(Boolean);
+function mediaHtml(m){return m?(m.t==="v"?`<video controls playsinline src="${esc(m.u)}"></video>`:`<img src="${esc(m.u)}" alt="">`):`<div class="ph">\ud83d\uddbc\ufe0f</div>`}
+function showM(i){$("#big").innerHTML=mediaHtml(_md[i]);document.querySelectorAll(".th").forEach((b,j)=>b.classList.toggle("on",j===i))}
+function view(id){
+  const a=arts.find(x=>x.id===id);if(!a)return;
+  const hist=bids.filter(b=>b.art===id).sort((x,y)=>y.amount-x.amount).slice(0,8);
+  _md=[];[a.img,...lines(a.imgs)].forEach(u=>safe(u)&&_md.push({t:"i",u}));[a.video,...lines(a.vids)].forEach(u=>safe(u)&&_md.push({t:"v",u}));
+  if(!_md.length&&safe(a.cover))_md.push({t:"i",u:a.cover});
+  const th=_md.length>1?`<div class="thumbs">${_md.map((x,i)=>`<button class="th${i?"":" on"}" onclick="showM(${i})" aria-label="Media ${i+1}">${x.t==="v"?'<div class="ph">\u25b6</div>':`<img src="${esc(x.u)}" alt="">`}</button>`).join("")}</div>`:"";
+  const nb=bids.filter(b=>b.art===id).length;
+  modal(`<div id="big">${mediaHtml(_md[0])}</div>${th}
+  <h3 style="margin:4px 0">${esc(a.title)}</h3><div class="by">by ${esc(a.by)}</div>
+  <p style="white-space:pre-wrap">${esc(a.desc)||"No description yet."}</p>
+  <div class="facts"><div><span>Starting bid</span><b>${fmt(a.start||0)}</b></div><div><span>${ended(a)?"Final bid":"Current bid"}</span><b>${fmt(price(a))}</b></div><div><span>Bids</span><b>${nb}</b></div><div><span>${ended(a)?"Ended":"Ends"}</span><b>${esc(new Date(a.endsAt).toLocaleString(lang==="pl"?"pl-PL":undefined))}</b></div></div>
+  <p>${cd(a)}${_md.length>1?` \u00b7 ${_md.filter(x=>x.t==="i").length} picture(s), ${_md.filter(x=>x.t==="v").length} video(s)`:""}</p>
+  ${hist.length?`<p class="by">Bids: ${hist.map(h=>esc(h.name)+" "+fmt(h.amount)).join(" \u00b7 ")}</p>`:""}
+  ${ended(a)?`<p><b>This auction has ended.</b></p>${claimHtml(a)}`:`<label>Your name<input id="b_n" autocomplete="name"></label><label>Class<input id="b_c"></label><label>Country<select id="b_k"><option value="">Choose\u2026</option><option value="Poland">Poland</option><option value="United Kingdom">United Kingdom</option></select></label>
+  <label>Your bid (${cc}) \u2014 must beat ${fmt(price(a))}<input id="b_a" type="number" inputmode="decimal" min="0" step="any"></label><p id="b_e" class="err"></p>
+  <button class="pri" onclick="bid('${a.id}')">Place bid</button> `}<button onclick="closeM()">Close</button>`);
+}
+function bid(id){
+  const a=arts.find(x=>x.id===id),n=$("#b_n").value.trim(),c=$("#b_c").value.trim(),k=$("#b_k").value,v=Math.round(Number($("#b_a").value)/CUR[cc].r*100)/100,e=$("#b_e");
+  if(!a||ended(a)){e.textContent="Sorry, this auction just ended.";return}
+  if(!n||!c||!k){e.textContent="Please enter your name, class and country.";return}
+  if(!(v>price(a))){e.textContent="Your bid must be higher than "+fmt(price(a))+".";return}
+  save("bids","b"+Date.now()+Math.random().toString(36).slice(2,6),{art:id,name:n,cls:c,cty:k,amount:v,at:Date.now()});
+  closeM();toast("Bid placed: "+fmt(v)+" on “"+a.title+"”");
+}
+
+/* ---------- admin ---------- */
+function loginM(){
+  if(admin){sb&&sb.auth.signOut();return}
+  modal(`<h3>Admin login</h3><label>Username<input id="l_u" autocomplete="username"></label><label>Password<input id="l_p" type="password" autocomplete="current-password"></label><p id="l_e" class="err"></p>
+  <button class="pri" onclick="login()">Log in</button> <button onclick="closeM()">Cancel</button>`);
+}
+async function login(){
+  if(!sb){$("#l_e").textContent="Site not connected to Supabase yet.";return}
+  const r=await sb.auth.signInWithPassword({email:$("#l_u").value.trim().toLowerCase()+"@artnart.gallery",password:$("#l_p").value});
+  if(r.error)$("#l_e").textContent="Wrong username or password.";else{admin=true;closeM();load();$("#adm").scrollIntoView()}
+}
+function rAdmin(){
+  $("#adm").style.display=admin?"block":"none";$("#loginB").textContent=admin?"Log out":"Admin login";
+  const fresh=arts.filter(a=>ended(a)&&!a.seen);$("#bellB").style.display=admin?"inline-block":"none";$("#bn").textContent=fresh.length;
+  if(!admin)return;
+  const live=arts.filter(a=>!ended(a)).length;$("#stats").innerHTML=`<div><span>Live auctions</span><b>${live}</b></div><div><span>Ended</span><b>${arts.length-live}</b></div><div><span>Total bids</span><b>${bids.length}</b></div><div><span>Confirmed sales</span><b>${arts.filter(a=>a.confirmed).length}</b></div>`;
+  fresh.forEach(a=>{if(!seenEnd[a.id]){seenEnd[a.id]=1;toast("🔔 Auction ended: "+a.title)}});
+  $("#notes").innerHTML=fresh.length?fresh.map(a=>{const t=topBid(a);return`<div class="note"><b>⏰ “${esc(a.title)}” has ended.</b><br>${t?`Winner: <b>${esc(t.name)}</b> (class ${esc(t.cls)}, ${esc(t.cty||"?")}) with ${fmt(t.amount)}`:"No bids were placed."}<br><button onclick="save('art','${a.id}',{seen:true},true)" style="margin-top:6px">Mark as seen</button></div>`}).join(""):`<p class="muted">No new notifications.</p>`;
+  $("#alist").innerHTML=arts.map(a=>{const bs=bids.filter(b=>b.art===a.id).sort((x,y)=>y.amount-x.amount);return`<div class="card">${pic(a.cover||a.img)}<div class="cb"><b>${esc(a.title)}</b><div class="by">by ${esc(a.by)} · ${cd(a)}</div>
+  <div class="by">${bs.slice(0,4).map(b=>esc(b.name)+" ("+esc(b.cls)+", "+esc(b.cty||"?")+") "+fmt(b.amount)).join("<br>")||"No bids"}</div>${shipHtml(a)}
+  <div class="row" style="margin-top:8px"><button onclick="editArt('${a.id}')">Edit</button><button onclick="save('art','${a.id}',{feat:${!a.feat}},true)">${a.feat?"★ Featured":"☆ Feature"}</button><button onclick="quickPic('${a.id}')">Change picture</button><button class="dng" onclick="rm('${a.id}')">Delete</button></div></div></div>`}).join("");
+}
+function rm(id){const a=arts.find(x=>x.id===id);if(!a)return;modal(`<h3>Delete “${esc(a.title)}”?</h3><p>This also removes its bids and can’t be undone.</p><button class="dng" onclick="rmGo('${id}')">Yes, delete</button> <button onclick="closeM()">Cancel</button>`)}
+function rmGo(id){bids.filter(b=>b.art===id).forEach(b=>del("bids",b.id));del("art",id);del("ship",id);del("confirmed",id);closeM();toast("Deleted")}
+function shipHtml(a){const s=ships.find(x=>x.id===a.id),t=topBid(a);
+  if(s)return`<div class="note">📦 <b>Purchase confirmed</b><br>${esc(s.name)} (class ${esc(s.cls)}), ${esc(s.cty)}<br>${esc(s.addr).replace(/\n/g,"<br>")}<br>💳 Payment: <b>${esc(s.pay||"?")}</b></div>`;
+  if(ended(a)&&t)return a.confirmed?`<div class="note">✔ Confirmed by buyer (address visible to the account owner only)</div>`:`<div class="note">Waiting for ${esc(t.name)} to confirm the purchase</div>`;return""}
+function claimHtml(a){const t=topBid(a);if(!t)return"";if(a.confirmed)return`<p class="tag">✔ Purchase confirmed — the artist will arrange delivery.</p>`;
+  return`<hr><p><b>Won this piece?</b> Confirm your purchase to give your delivery address.</p><label>Your name<input id="c_n"></label><label>Class<input id="c_c"></label><label>Payment method<select id="c_p"><option value="">Choose…</option><option value="Card">Card</option><option value="Cash">Cash</option></select></label><label>Delivery address in ${esc(t.cty||"your country")}<textarea id="c_a" rows="3"></textarea></label><p id="c_e" class="err"></p><button class="pri" onclick="claim('${a.id}')">Confirm purchase</button> `}
+function claim(id){const a=arts.find(x=>x.id===id),t=a&&topBid(a),e=$("#c_e"),n=$("#c_n").value.trim().toLowerCase(),c=$("#c_c").value.trim().toLowerCase(),ad=$("#c_a").value.trim(),p=$("#c_p").value;
+  if(!t||t.name.trim().toLowerCase()!==n||String(t.cls).trim().toLowerCase()!==c){e.textContent="Name and class must match the winning bid.";return}
+  if(!p){e.textContent="Please choose card or cash.";return}
+  if(ad.length<8){e.textContent="Please enter your full address.";return}
+  save("ship",id,{name:t.name,cls:t.cls,cty:t.cty||"",addr:ad,pay:p,amount:t.amount,at:Date.now()});save("confirmed",id,{});
+  const m=p==="Card"?(/^https:\/\//.test(a.payUrl||"")?`<p>Pay securely by card:</p><p><a href="${esc(a.payUrl)}" target="_blank" rel="noopener"><button class="pri">Pay ${fmt(t.amount)} by card</button></a></p>`:`<p>The artist will send you a secure card payment link.</p>`):`<p>Please have <b>${fmt(t.amount)}</b> in cash ready when your piece is delivered or collected.</p>`;
+  modal(`<h3>Purchase confirmed ✔</h3>${m}<button onclick="closeM()">Close</button>`)}
+async function uploadFile(f){
+  if(!sb||!admin){toast("Log in first");return null}
+  const p=Date.now()+"-"+f.name.replace(/[^\w.\-]/g,"_"),r=await sb.storage.from("art").upload(p,f);
+  if(r.error){toast("Upload failed: "+r.error.message);return null}
+  return sb.storage.from("art").getPublicUrl(p).data.publicUrl;
+}
+let quickId=null;
+function quickPic(id){quickId=id;$("#quick").click()}
+$("#quick").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f||!quickId)return;const u=await uploadFile(f);if(u){save("art",quickId,{img:u},true);toast("Picture changed")}};
+const up=(k,l,v)=>`<label>${l}<input id="u_${k}" value="${esc(v)}" placeholder="paste a link${assets?" or upload below":""}"></label>${assets?`<input type="file" data-k="${k}" class="fu" accept="${k==="video"?"video/*":"image/*"}">`:""}`;
+$("#ov").addEventListener("change",async e=>{if(!e.target.classList.contains("fu")||!e.target.files[0])return;toast("Uploading…");const u=await uploadFile(e.target.files[0]);if(u){const t=$("#u_"+e.target.dataset.k);t.value=t.tagName==="TEXTAREA"&&t.value.trim()?t.value.trim()+"\n"+u:u;e.target.value="";toast("Uploaded ✔")}});
+function editArt(id){
+  const a=arts.find(x=>x.id===id)||{};
+  modal(`<h3>${id?"Edit":"New"} piece</h3><label>Title<input id="f_t" value="${esc(a.title)}"></label><label>By (artist)<input id="f_by" value="${esc(a.by)}"></label>
+  <label>Description<textarea id="f_d" rows="3">${esc(a.desc)}</textarea></label><label>Starting bid (GBP £)<input id="f_s" type="number" min="0" value="${a.start==null?5:a.start}"></label>
+  <label>Auction ends<input id="f_e" type="datetime-local" value="${a.endsAt?lt(a.endsAt):""}"></label>
+  <label><input type="checkbox" id="f_f" ${a.feat?"checked":""} style="width:auto;margin:0 8px 0 0">★ Show in the featured carousel</label>
+  ${up("img","Main picture",a.img)}${up("cover","Cover image (shown on wheel and cards)",a.cover)}${up("video","Video (optional)",a.video)}<label>More pictures (one link per line)<textarea id="u_imgs" rows="2">${esc(a.imgs)}</textarea></label>${assets?`<input type="file" data-k="imgs" class="fu" accept="image/*">`:""}<label>More videos (one link per line)<textarea id="u_vids" rows="2">${esc(a.vids)}</textarea></label>${assets?`<input type="file" data-k="vids" class="fu" accept="video/*">`:""}<label>Card payment link (optional — a Stripe or PayPal link)<input id="f_pu" value="${esc(a.payUrl)}"></label><p id="f_x" class="err"></p>
+  <button class="pri" onclick="saveArt('${id||""}')">Save</button> <button onclick="closeM()">Cancel</button>`);
+}
+function saveArt(id){
+  const g=k=>$("#"+k).value.trim(),e=new Date($("#f_e").value).getTime();
+  if(!g("f_t")||!g("f_by")||isNaN(e)){$("#f_x").textContent="Title, artist and end date are required.";return}
+  const old=arts.find(x=>x.id===id)||{},d={title:g("f_t"),by:g("f_by"),desc:g("f_d"),start:Number(g("f_s"))||0,endsAt:e,img:g("u_img"),cover:g("u_cover"),video:g("u_video"),feat:$("#f_f").checked,payUrl:g("f_pu"),created:old.created||Date.now(),imgs:g("u_imgs"),vids:g("u_vids"),seen:e>Date.now()?false:!!old.seen};
+  if(id)save("art",id,d,true);else save("art","a"+Date.now(),d);
+  closeM();toast("Saved ✔");
+}
+$("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeM()});
+setInterval(()=>{let hit=false;document.querySelectorAll("[data-end]").forEach(el=>{const t=+el.dataset.end;el.textContent=left(t);if(t<=Date.now()&&!el.dataset.d){el.dataset.d=1;hit=true}});if(hit)render()},1000);
+
+/* ---------- language: English / Polski ---------- */
+let lang="en";try{lang=localStorage.getItem("lang")||((navigator.language||"").toLowerCase().startsWith("pl")?"pl":"en")}catch(e){}
+const PL={"Admin login":"Logowanie admina","Log out":"Wyloguj","Original artwork, sold by auction only. Browse the collection, find a piece you love, and place your bid before the clock runs out.":"Oryginalne prace, sprzedawane wyłącznie na aukcjach. Przeglądaj kolekcję, znajdź pracę, która Ci się podoba, i złóż ofertę, zanim upłynie czas.","Featured pieces":"Wyróżnione prace","All pieces":"Wszystkie prace","All":"Wszystkie","Live auctions":"Aukcje w toku","Ended":"Zakończone","♥ Favourites":"♥ Ulubione","Ending soon":"Kończą się wkrótce","Newest":"Najnowsze","Price: low to high":"Cena: rosnąco","Price: high to low":"Cena: malejąco","Admin board":"Panel admina","Pieces":"Prace","+ New piece":"+ Nowa praca","🔍 Search title or artist":"🔍 Szukaj tytułu lub artysty","Language":"Język","Currency":"Waluta","Previous":"Poprzednia","Next":"Następna","Favourite":"Ulubione","View":"Zobacz","Buy / Bid":"Kup / Licytuj","View details →":"Zobacz szczegóły →","Nothing matches.":"Brak wyników.","No featured pieces yet — the artist will pick some soon. 🌱 Scroll down to see everything.":"Brak wyróżnionych prac — artysta wkrótce jakieś wybierze. 🌱 Przewiń w dół, aby zobaczyć wszystko.","▶ video":"▶ wideo","🔥 ending soon":"🔥 wkrótce koniec","· no bids yet":"· brak ofert","No description yet.":"Brak opisu.","Starting bid":"Cena wywoławcza","Current bid":"Aktualna oferta","Final bid":"Cena końcowa","Bids":"Oferty","Ends":"Koniec","This auction has ended.":"Ta aukcja się zakończyła.","Your name":"Twoje imię","Class":"Klasa","Country":"Kraj","Choose…":"Wybierz…","Poland":"Polska","United Kingdom":"Wielka Brytania","Place bid":"Złóż ofertę","Close":"Zamknij","Cancel":"Anuluj","Sorry, this auction just ended.":"Przepraszamy, ta aukcja właśnie się zakończyła.","Please enter your name, class and country.":"Wpisz imię, klasę i kraj.","Username":"Nazwa użytkownika","Password":"Hasło","Log in":"Zaloguj","Site not connected to Supabase yet.":"Strona nie jest jeszcze połączona z Supabase.","Wrong username or password.":"Błędna nazwa użytkownika lub hasło.","Total bids":"Wszystkie oferty","Confirmed sales":"Potwierdzone sprzedaże","Winner:":"Zwycięzca:","No bids were placed.":"Nie złożono ofert.","Mark as seen":"Oznacz jako przeczytane","No new notifications.":"Brak nowych powiadomień.","No bids":"Brak ofert","Edit":"Edytuj","★ Featured":"★ Wyróżniona","☆ Feature":"☆ Wyróżnij","Change picture":"Zmień zdjęcie","Delete":"Usuń","This also removes its bids and can’t be undone.":"Spowoduje to też usunięcie ofert i nie można tego cofnąć.","Yes, delete":"Tak, usuń","Deleted":"Usunięto","Purchase confirmed":"Zakup potwierdzony","💳 Payment:":"💳 Płatność:","Card":"Karta","Cash":"Gotówka","✔ Confirmed by buyer (address visible to the account owner only)":"✔ Potwierdzone przez kupującego (adres widoczny tylko dla właściciela konta)","✔ Purchase confirmed — the artist will arrange delivery.":"✔ Zakup potwierdzony — artysta zorganizuje dostawę.","Won this piece?":"Wygrałeś tę pracę?","Confirm your purchase to give your delivery address.":"Potwierdź zakup i podaj adres dostawy.","Payment method":"Metoda płatności","Confirm purchase":"Potwierdź zakup","Name and class must match the winning bid.":"Imię i klasa muszą zgadzać się z wygraną ofertą.","Please choose card or cash.":"Wybierz kartę lub gotówkę.","Please enter your full address.":"Wpisz pełny adres.","Purchase confirmed ✔":"Zakup potwierdzony ✔","Pay securely by card:":"Zapłać bezpiecznie kartą:","The artist will send you a secure card payment link.":"Artysta wyśle Ci bezpieczny link do płatności kartą.","Please have":"Przygotuj","in cash ready when your piece is delivered or collected.":"w gotówce na dostawę lub odbiór pracy.","Log in first":"Najpierw się zaloguj","Picture changed":"Zdjęcie zmienione","Uploading…":"Wysyłanie…","Uploaded ✔":"Wysłano ✔","Saved ✔":"Zapisano ✔","Add your Supabase keys first":"Najpierw dodaj klucze Supabase","Setup needed: add Supabase keys":"Wymagana konfiguracja: dodaj klucze Supabase","● live":"● na żywo","Edit piece":"Edytuj pracę","New piece":"Nowa praca","Title":"Tytuł","By (artist)":"Autor (artysta)","Description":"Opis","Starting bid (GBP £)":"Cena wywoławcza (GBP £)","Auction ends":"Koniec aukcji","★ Show in the featured carousel":"★ Pokaż w wyróżnionych","Main picture":"Główne zdjęcie","Cover image (shown on wheel and cards)":"Okładka (pokazywana na kartach)","Video (optional)":"Wideo (opcjonalnie)","More pictures (one link per line)":"Więcej zdjęć (jeden link w wierszu)","More videos (one link per line)":"Więcej filmów (jeden link w wierszu)","Card payment link (optional — a Stripe or PayPal link)":"Link do płatności kartą (opcjonalnie — Stripe lub PayPal)","Save":"Zapisz","Title, artist and end date are required.":"Tytuł, autor i data zakończenia są wymagane.","paste a link":"wklej link","paste a link or upload below":"wklej link lub wyślij plik poniżej"};
+const pl_=(n,a,b,c)=>n==1?a:(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?b:c,ct=x=>PL[x]||x;
+const RE=[[/^(Current bid|Final bid): (.+)$/,(m,a,b)=>PL[a]+": "+b],[/^by ([\s\S]*)$/,(m,a)=>"autor: "+a],[/^· (\d+) bid\(s\)$/,(m,n)=>"· "+n+" "+pl_(+n,"oferta","oferty","ofert")],[/^· (\d+) picture\(s\), (\d+) video\(s\)$/,(m,a,b)=>"· zdjęcia: "+a+", wideo: "+b],[/^Bids: ([\s\S]*)$/,(m,a)=>"Oferty: "+a],[/^Your bid \((\w+)\) — must beat (.+)$/,(m,a,b)=>"Twoja oferta ("+a+") — musi przebić "+b],[/^Your bid must be higher than (.+)\.$/,(m,a)=>"Twoja oferta musi być wyższa niż "+a+"."],[/^Bid placed: (.+) on “([\s\S]+)”$/,(m,a,b)=>"Oferta złożona: "+a+" na „"+b+"”"],[/^🔔 Auction ended: ([\s\S]+)$/,(m,a)=>"🔔 Aukcja zakończona: "+a],[/^⏰ “([\s\S]+)” has ended\.$/,(m,a)=>"⏰ „"+a+"” zakończona."],[/^\(class (.+), (.+)\) with (.+)$/,(m,a,b,c)=>"(klasa "+a+", "+ct(b)+") — "+c],[/^([\s\S]+?) \((.+), (.+)\) (\S+.*)$/,(m,n,a,b,c)=>n+" (klasa "+a+", "+ct(b)+") "+c],[/^([\s\S]+) \(class (.+)\), (.+)$/,(m,n,a,b)=>n+" (klasa "+a+"), "+ct(b)],[/^Waiting for ([\s\S]+) to confirm the purchase$/,(m,a)=>"Czekamy, aż "+a+" potwierdzi zakup"],[/^Delivery address in (.+)$/,(m,a)=>"Adres dostawy ("+ct(a==="your country"?"":a)+(a==="your country"?"Twój kraj":"")+")"],[/^Delete “([\s\S]+)”\?$/,(m,a)=>"Usunąć „"+a+"”?"],[/^Pay (.+) by card$/,(m,a)=>"Zapłać "+a+" kartą"],[/^Upload failed: (.+)$/,(m,a)=>"Błąd wysyłania: "+a],[/^Could not save: (.+)$/,(m,a)=>"Nie udało się zapisać: "+a],[/^Could not delete: (.+)$/,(m,a)=>"Nie udało się usunąć: "+a],[/^Featured piece (\d+)$/,(m,a)=>"Wyróżniona praca "+a],[/^Media (\d+)$/,(m,a)=>"Plik "+a]];
+function trS(s,el){const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/),c=m[2];if(!c)return s;let r=PL[c];
+  if(r===undefined&&!(el&&(/^(H1|H2|H3|TEXTAREA|SCRIPT|STYLE)$/.test(el.tagName)||/pre-wrap/.test(el.getAttribute&&el.getAttribute("style")||"")))){for(const[re,fn]of RE){if(re.test(c)){r=c.replace(re,fn);break}}}
+  return r===undefined?s:m[1]+r+m[3]}
+function trT(n){const v=n.nodeValue;if(n.__t===v&&n.__l===lang)return;const b=(n.__t===v&&n.__o!==undefined)?n.__o:v,r=lang==="pl"?trS(b,n.parentElement):b;n.__o=b;n.__t=r;n.__l=lang;if(r!==v)n.nodeValue=r}
+function trA(el){["placeholder","aria-label"].forEach(a=>{const v=el.getAttribute&&el.getAttribute(a);if(v==null)return;const k="__"+a;if(el[k+"t"]===v&&el[k+"l"]===lang)return;const b=el[k+"t"]===v&&el[k+"o"]!==undefined?el[k+"o"]:v,r=lang==="pl"?trS(b,el):b;el[k+"o"]=b;el[k+"t"]=r;el[k+"l"]=lang;if(r!==v)el.setAttribute(a,r)})}
+function walk(r){if(r.nodeType===3){trT(r);return}if(r.nodeType!==1)return;trA(r);const w=document.createTreeWalker(r,5);let n;while(n=w.nextNode()){n.nodeType===3?trT(n):trA(n)}}
+function setLang(l){lang=l;try{localStorage.setItem("lang",l)}catch(e){}document.documentElement.lang=l;closeM();render();walk(document.body)}
+new MutationObserver(ms=>{ms.forEach(m=>{if(m.type==="characterData")trT(m.target);else m.addedNodes.forEach(walk)})}).observe(document.body,{childList:true,characterData:true,subtree:true});
+document.documentElement.lang=lang;$("#langS").value=lang;walk(document.body);
+init();
+</script></body></html>
