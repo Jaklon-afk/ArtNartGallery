@@ -1,14 +1,10 @@
 <!doctype html>
-<html lang="en">
-<head>
-<link rel="icon" href="./Art4Eva.png" type="image/png">
-<link rel="shortcut icon" href="./Art4Eva.png" type="image/png">
-<link rel="apple-touch-icon" href="./Art4Eva.png">
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The ArtNart Gallery</title>
 <meta name="version" content="1.0">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <style>
 :root{color-scheme:light dark;--bg:#f1f8f2;--sf:#fff;--tx:#14261a;--mu:#587060;--g:#1f8a4c;--gd:#146b3a;--gl:#dcefe2;--bd:#cde2d3;--rd:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a11;--sf:#16271c;--tx:#e6f2e9;--mu:#9bb5a2;--g:#3fbf72;--gd:#2e9e5a;--gl:#1d3a27;--bd:#2a4634;--rd:#ff7b6b}}
@@ -82,6 +78,7 @@ label{display:block;font-size:.85rem;color:var(--mu)}
 <div id="ov"></div><div id="toast"></div>
 <script>
 const SB_URL="https://mvjmbegwqkxinpqtacug.supabase.co",SB_KEY="sb_publishable_G5tTq6z-Hypg9Oj3_Ls4eg_wuUxZXIw";
+const STRIPE_PUBLISHABLE_KEY="pk_test_51UVq50JPdHzXTf2traBFrwLZZe8wrhIxCvP1xkY2f9x8UyS84DmCHUNA2ASdAiUMhsL2mnYmezyCtnIOSYugzYHc00Mr0SB2HC";
 let db=null,assets=null,arts=[],bids=[],ships=[],admin=false,ang=0,cur=null,seenEnd={};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -103,18 +100,20 @@ rates();setInterval(rates,36e5);
 function setCur(v){cc=v;try{localStorage.setItem("cur",v)}catch(e){}closeM();render()}
 let sb=null;
 async function save(c,id,d,upd){
-  if(!sb)return toast("Add your Supabase keys first");
-  let r;
-  if(upd){const o=(c==="art"?arts:c==="ship"?ships:bids).find(x=>x.id===id)||{};const{id:_i,confirmed:_c,...rest}=o;r=await sb.from(c).update({data:{...rest,...d}}).eq("id",id)}
-  else r=await sb.from(c).insert({id,data:d});
-  if(r.error)toast("Could not save: "+r.error.message);else load();
+   if(!sb){toast("Add your Supabase keys first");return false}
+   let r;
+   if(upd){const source=c==="art"?arts:c==="ship"?ships:c==="confirmed"?[]:bids;const o=source.find(x=>x.id===id)||{};const{id:_i,confirmed:_c,...rest}=o;r=await sb.from(c).update({data:{...rest,...d}}).eq("id",id)}
+   else r=await sb.from(c).insert({id,data:d});
+   if(r.error){toast("Could not save: "+r.error.message);return false}
+   await load();return true;
 }
 async function del(c,id){if(!sb)return;const r=await sb.from(c).delete().eq("id",id);if(r.error)toast("Could not delete: "+r.error.message);else load()}
 const rows=r=>(r.data||[]).map(x=>({id:x.id,...x.data}));
 async function load(){
   const[a,b,s2,c]=await Promise.all(["art","bids","ship","confirmed"].map(t=>sb.from(t).select("*")));
-  const conf=new Set((c.data||[]).map(x=>x.id));
-  arts=rows(a);arts.forEach(x=>x.confirmed=conf.has(x.id));bids=rows(b);ships=rows(s2);render();
+  const confRows=rows(c),confMap=new Map(confRows.map(x=>[x.id,x]));
+  arts=rows(a);arts.forEach(x=>{const cf=confMap.get(x.id);x.confirmed=!!cf;x.paymentStatus=cf&&cf.status||"";x.paid=!!(cf&&cf.paid)});
+  bids=rows(b);ships=rows(s2);render();
 }
 async function init(){
   if(SB_URL.startsWith("PASTE")){$("#sync").textContent="Setup needed: add Supabase keys";render();return}
@@ -131,9 +130,9 @@ let hi=0,ap,hov=false;
 const feats=()=>arts.filter(a=>a.feat);
 function rWheel(){
   const b=$("#wheelBox"),L=feats();$("#dots").innerHTML="";
-  if(!L.length){b.innerHTML=`<div class="hslide" style="cursor:default;height:180px;display:grid;place-items:center"><p class="muted">No featured pieces yet \u2014 the artist will pick some soon. \ud83c\udf31 Scroll down to see everything.</p></div>`;return}
+  if(!L.length){b.innerHTML=`<div class="hslide" style="cursor:default;height:180px;display:grid;place-items:center"><p class="muted">No featured pieces yet — the artist will pick some soon. 🌱 Scroll down to see everything.</p></div>`;return}
   if(hi>=L.length)hi=0;
-  b.innerHTML=L.map(a=>{const u=safe(a.cover||a.img),cu=encodeURI(u).replace(/\(/g,"%28").replace(/\)/g,"%29");return`<div class="hslide" onclick="view('${a.id}')">${u?`<div class="hbg" style="background-image:url(${esc(cu)})"></div><img class="hfg" src="${esc(u)}" alt="">`:`<div class="ph hfg">\ud83d\uddbc\ufe0f</div>`}<div class="cap"><h2>${esc(a.title)}</h2><div>by ${esc(a.by)}</div><div><b>${ended(a)?"Final bid":"Current bid"}: ${fmt(price(a))}</b> \u00b7 ${cd(a)}</div><span class="tag">View details \u2192</span></div></div>`}).join("");
+  b.innerHTML=L.map(a=>{const u=safe(a.cover||a.img),cu=encodeURI(u).replace(/\(/g,"%28").replace(/\)/g,"%29");return`<div class="hslide" onclick="view('${a.id}')">${u?`<div class="hbg" style="background-image:url(${esc(cu)})"></div><img class="hfg" src="${esc(u)}" alt="">`:`<div class="ph hfg">🖼️</div>`}<div class="cap"><h2>${esc(a.title)}</h2><div>by ${esc(a.by)}</div><div><b>${ended(a)?"Final bid":"Current bid"}: ${fmt(price(a))}</b> · ${cd(a)}</div><span class="tag">View details →</span></div></div>`}).join("");
   $("#dots").innerHTML=L.map((a,k)=>`<button class="dot${k===hi?" on":""}" onclick="goF(${k})" aria-label="Featured piece ${k+1}"></button>`).join("");
   b.scrollLeft=hi*b.clientWidth;
 }
@@ -144,35 +143,35 @@ function auto(){clearInterval(ap);ap=setInterval(()=>{if(!hov&&feats().length>1&
 $("#wheelBox").addEventListener("scroll",()=>{const b=$("#wheelBox"),k=Math.round(b.scrollLeft/(b.clientWidth||1));if(k!==hi&&k<feats().length){hi=k;dotsOn()}});
 $(".hero").onmouseenter=()=>hov=true;$(".hero").onmouseleave=()=>hov=false;auto();
 let fav=[];try{fav=JSON.parse(localStorage.getItem("fav")||"[]")}catch(e){}
-function togFav(id){fav=fav.includes(id)?fav.filter(x=>x!==id):[...fav,id];try{localStorage.setItem("fav",JSON.stringify(fav))}catch(e){}rGrid()}
+  function togFav(id){fav=fav.includes(id)?fav.filter(x=>x!==id):[...fav,id];try{localStorage.setItem("fav",JSON.stringify(fav))}catch(e){}rGrid()}
 function rGrid(){
   const q=$("#q").value.trim().toLowerCase(),f=$("#flt").value,o=$("#srt").value;
   const L=arts.filter(a=>(!q||(a.title+" "+a.by).toLowerCase().includes(q))&&(f==="all"||(f==="live"&&!ended(a))||(f==="ended"&&ended(a))||(f==="fav"&&fav.includes(a.id))));
   L.sort(o==="end"?(x,y)=>(ended(x)-ended(y))||x.endsAt-y.endsAt:o==="new"?(x,y)=>(y.created||0)-(x.created||0):o==="lo"?(x,y)=>price(x)-price(y):(x,y)=>price(y)-price(x));
   $("#grid").innerHTML=L.length?L.map(a=>{const soon=!ended(a)&&a.endsAt-Date.now()<864e5,nb=bids.filter(b=>b.art===a.id).length;
-  return`<div class="card"><div class="clk" onclick="view('${a.id}')">${pic(a.cover||a.img)}</div><div class="cb"><h3 class="clk" onclick="view('${a.id}')">${esc(a.title)}</h3><div class="by">by ${esc(a.by)} ${a.video||a.vids?'<span class="tag">\u25b6 video</span>':""} ${soon?'<span class="tag">\ud83d\udd25 ending soon</span>':""}</div><div class="price">${fmt(price(a))}</div><div class="by">${cd(a)} \u00b7 ${nb?nb+" bid(s)":"no bids yet"}</div><div class="row" style="margin-top:8px"><button class="pri" onclick="view('${a.id}')">${ended(a)?"View":"Buy / Bid"}</button><button onclick="togFav('${a.id}')" aria-label="Favourite">${fav.includes(a.id)?"\u2665":"\u2661"}</button></div></div></div>`}).join(""):`<p class="muted">Nothing matches.</p>`;
+  return`<div class="card"><div class="clk" onclick="view('${a.id}')">${pic(a.cover||a.img)}</div><div class="cb"><h3 class="clk" onclick="view('${a.id}')">${esc(a.title)}</h3><div class="by">by ${esc(a.by)} ${a.video||a.vids?'<span class="tag">▶ video</span>':""} ${soon?'<span class="tag">🔥 ending soon</span>':""}</div><div class="price">${fmt(price(a))}</div><div class="by">${cd(a)} · ${nb?nb+" bid(s)":"no bids yet"}</div><div class="row" style="margin-top:8px"><button class="pri" onclick="view('${a.id}')">${ended(a)?"View":"Buy / Bid"}</button><button onclick="togFav('${a.id}')" aria-label="Favourite">${fav.includes(a.id)?"♥":"♡"}</button></div></div></div>`}).join(""):`<p class="muted">Nothing matches.</p>`;
 }
 function modal(h){const o=$("#ov");o.innerHTML=`<div class="m">${h}</div>`;o.style.display="block"}
 function closeM(){$("#ov").style.display="none";$("#ov").innerHTML=""}
 let _md=[];
 const lines=t=>String(t||"").split(/\n/).map(x=>x.trim()).filter(Boolean);
-function mediaHtml(m){return m?(m.t==="v"?`<video controls playsinline src="${esc(m.u)}"></video>`:`<img src="${esc(m.u)}" alt="">`):`<div class="ph">\ud83d\uddbc\ufe0f</div>`}
+function mediaHtml(m){return m?(m.t==="v"?`<video controls playsinline src="${esc(m.u)}"></video>`:`<img src="${esc(m.u)}" alt="">`):`<div class="ph">🖼️</div>`}
 function showM(i){$("#big").innerHTML=mediaHtml(_md[i]);document.querySelectorAll(".th").forEach((b,j)=>b.classList.toggle("on",j===i))}
 function view(id){
   const a=arts.find(x=>x.id===id);if(!a)return;
   const hist=bids.filter(b=>b.art===id).sort((x,y)=>y.amount-x.amount).slice(0,8);
   _md=[];[a.img,...lines(a.imgs)].forEach(u=>safe(u)&&_md.push({t:"i",u}));[a.video,...lines(a.vids)].forEach(u=>safe(u)&&_md.push({t:"v",u}));
   if(!_md.length&&safe(a.cover))_md.push({t:"i",u:a.cover});
-  const th=_md.length>1?`<div class="thumbs">${_md.map((x,i)=>`<button class="th${i?"":" on"}" onclick="showM(${i})" aria-label="Media ${i+1}">${x.t==="v"?'<div class="ph">\u25b6</div>':`<img src="${esc(x.u)}" alt="">`}</button>`).join("")}</div>`:"";
+  const th=_md.length>1?`<div class="thumbs">${_md.map((x,i)=>`<button class="th${i?"":" on"}" onclick="showM(${i})" aria-label="Media ${i+1}">${x.t==="v"?'<div class="ph">▶</div>':`<img src="${esc(x.u)}" alt="">`}</button>`).join("")}</div>`:"";
   const nb=bids.filter(b=>b.art===id).length;
   modal(`<div id="big">${mediaHtml(_md[0])}</div>${th}
   <h3 style="margin:4px 0">${esc(a.title)}</h3><div class="by">by ${esc(a.by)}</div>
   <p style="white-space:pre-wrap">${esc(a.desc)||"No description yet."}</p>
   <div class="facts"><div><span>Starting bid</span><b>${fmt(a.start||0)}</b></div><div><span>${ended(a)?"Final bid":"Current bid"}</span><b>${fmt(price(a))}</b></div><div><span>Bids</span><b>${nb}</b></div><div><span>${ended(a)?"Ended":"Ends"}</span><b>${esc(new Date(a.endsAt).toLocaleString(lang==="pl"?"pl-PL":undefined))}</b></div></div>
-  <p>${cd(a)}${_md.length>1?` \u00b7 ${_md.filter(x=>x.t==="i").length} picture(s), ${_md.filter(x=>x.t==="v").length} video(s)`:""}</p>
-  ${hist.length?`<p class="by">Bids: ${hist.map(h=>esc(h.name)+" "+fmt(h.amount)).join(" \u00b7 ")}</p>`:""}
-  ${ended(a)?`<p><b>This auction has ended.</b></p>${claimHtml(a)}`:`<label>Your name<input id="b_n" autocomplete="name"></label><label>Class<input id="b_c"></label><label>Country<select id="b_k"><option value="">Choose\u2026</option><option value="Poland">Poland</option><option value="United Kingdom">United Kingdom</option></select></label>
-  <label>Your bid (${cc}) \u2014 must beat ${fmt(price(a))}<input id="b_a" type="number" inputmode="decimal" min="0" step="any"></label><p id="b_e" class="err"></p>
+  <p>${cd(a)}${_md.length>1?` · ${_md.filter(x=>x.t==="i").length} picture(s), ${_md.filter(x=>x.t==="v").length} video(s)`:""}</p>
+  ${hist.length?`<p class="by">Bids: ${hist.map(h=>esc(h.name)+" "+fmt(h.amount)).join(" · ")}</p>`:""}
+  ${ended(a)?`<p><b>This auction has ended.</b></p>${claimHtml(a)}`:`<label>Your name<input id="b_n" autocomplete="name"></label><label>Class<input id="b_c"></label><label>Country<select id="b_k"><option value="">Choose…</option><option value="Poland">Poland</option><option value="United Kingdom">United Kingdom</option></select></label>
+  <label>Your bid (${cc}) — must beat ${fmt(price(a))}<input id="b_a" type="number" inputmode="decimal" min="0" step="any"></label><p id="b_e" class="err"></p>
   <button class="pri" onclick="bid('${a.id}')">Place bid</button> `}<button onclick="closeM()">Close</button>`);
 }
 function bid(id){
@@ -209,17 +208,27 @@ function rAdmin(){
 function rm(id){const a=arts.find(x=>x.id===id);if(!a)return;modal(`<h3>Delete “${esc(a.title)}”?</h3><p>This also removes its bids and can’t be undone.</p><button class="dng" onclick="rmGo('${id}')">Yes, delete</button> <button onclick="closeM()">Cancel</button>`)}
 function rmGo(id){bids.filter(b=>b.art===id).forEach(b=>del("bids",b.id));del("art",id);del("ship",id);del("confirmed",id);closeM();toast("Deleted")}
 function shipHtml(a){const s=ships.find(x=>x.id===a.id),t=topBid(a);
-  if(s)return`<div class="note">📦 <b>Purchase confirmed</b><br>${esc(s.name)} (class ${esc(s.cls)}), ${esc(s.cty)}<br>${esc(s.addr).replace(/\n/g,"<br>")}<br>💳 Payment: <b>${esc(s.pay||"?")}</b></div>`;
+  if(s){const payment=a.paid?"Paid via Stripe":a.paymentStatus==="pending"?"Stripe payment pending":(s.pay||"?");return`<div class="note">📦 <b>Purchase confirmed</b><br>${esc(s.name)} (class ${esc(s.cls)}), ${esc(s.cty)}<br>${esc(s.addr).replace(/\n/g,"<br>")}<br>💳 Payment: <b>${esc(payment)}</b></div>`}
   if(ended(a)&&t)return a.confirmed?`<div class="note">✔ Confirmed by buyer (address visible to the account owner only)</div>`:`<div class="note">Waiting for ${esc(t.name)} to confirm the purchase</div>`;return""}
-function claimHtml(a){const t=topBid(a);if(!t)return"";if(a.confirmed)return`<p class="tag">✔ Purchase confirmed — the artist will arrange delivery.</p>`;
+function claimHtml(a){const t=topBid(a);if(!t)return"";if(a.paid||a.paymentStatus==="cash")return`<p class="tag">✔ Purchase confirmed — the artist will arrange delivery.</p>`;
   return`<hr><p><b>Won this piece?</b> Confirm your purchase to give your delivery address.</p><label>Your name<input id="c_n"></label><label>Class<input id="c_c"></label><label>Payment method<select id="c_p"><option value="">Choose…</option><option value="Card">Card</option><option value="Cash">Cash</option></select></label><label>Delivery address in ${esc(t.cty||"your country")}<textarea id="c_a" rows="3"></textarea></label><p id="c_e" class="err"></p><button class="pri" onclick="claim('${a.id}')">Confirm purchase</button> `}
-function claim(id){const a=arts.find(x=>x.id===id),t=a&&topBid(a),e=$("#c_e"),n=$("#c_n").value.trim().toLowerCase(),c=$("#c_c").value.trim().toLowerCase(),ad=$("#c_a").value.trim(),p=$("#c_p").value;
+async function claim(id){
+  const a=arts.find(x=>x.id===id),t=a&&topBid(a),e=$("#c_e"),n=$("#c_n").value.trim().toLowerCase(),c=$("#c_c").value.trim().toLowerCase(),ad=$("#c_a").value.trim(),p=$("#c_p").value;
   if(!t||t.name.trim().toLowerCase()!==n||String(t.cls).trim().toLowerCase()!==c){e.textContent="Name and class must match the winning bid.";return}
   if(!p){e.textContent="Please choose card or cash.";return}
   if(ad.length<8){e.textContent="Please enter your full address.";return}
-  save("ship",id,{name:t.name,cls:t.cls,cty:t.cty||"",addr:ad,pay:p,amount:t.amount,at:Date.now()});save("confirmed",id,{});
-  const m=p==="Card"?(/^https:\/\//.test(a.payUrl||"")?`<p>Pay securely by card:</p><p><a href="${esc(a.payUrl)}" target="_blank" rel="noopener"><button class="pri">Pay ${fmt(t.amount)} by card</button></a></p>`:`<p>The artist will send you a secure card payment link.</p>`):`<p>Please have <b>${fmt(t.amount)}</b> in cash ready when your piece is delivered or collected.</p>`;
-  modal(`<h3>Purchase confirmed ✔</h3>${m}<button onclick="closeM()">Close</button>`)}
+  if(p==="Card"){
+    e.textContent="Preparing your Stripe payment link…";
+    if(!await save("ship",id,{name:t.name,cls:t.cls,cty:t.cty||"",addr:ad,pay:"Stripe payment link (payment pending)",amount:t.amount,at:Date.now()},!!ships.find(x=>x.id===id))){e.textContent="Could not save purchase details.";return}
+    const alreadyConfirmed=!!arts.find(x=>x.id===id)?.confirmed;
+    if(!await save("confirmed",id,{status:"pending",paid:false,provider:"stripe",amount:t.amount,at:Date.now()},alreadyConfirmed)){e.textContent="Could not prepare payment record.";return}
+    modal(`<h3>Secure Stripe payment</h3><p>You won <b>${esc(a.title)}</b> with a winning bid of <b>${fmt(t.amount)}</b>.</p><p class="muted">Continue to Stripe to complete your card payment. Your order remains pending until payment is verified.</p><a class="pri" href="https://buy.stripe.com/test_6oU8wQ2p5dqy70U5oBbwk01" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;padding:10px 16px;border-radius:10px;background:var(--g);color:white;font-weight:600">Continue to Stripe payment ↗</a><p class="muted" style="font-size:.82rem;margin-top:12px">This is a Stripe test link. It will not collect a live payment.</p><button onclick="closeM()">Close</button>`);
+    return;
+  }
+  if(!await save("ship",id,{name:t.name,cls:t.cls,cty:t.cty||"",addr:ad,pay:"Cash",amount:t.amount,at:Date.now()},!!ships.find(x=>x.id===id)))return;
+  await save("confirmed",id,{status:"cash",paid:false,provider:"cash",amount:t.amount,at:Date.now()},!!arts.find(x=>x.id===id)?.confirmed);
+  modal(`<h3>Purchase confirmed ✔</h3><p>Please have <b>${fmt(t.amount)}</b> in cash ready when your piece is delivered or collected.</p><button onclick="closeM()">Close</button>`);
+}
 async function uploadFile(f){
   if(!sb||!admin){toast("Log in first");return null}
   const p=Date.now()+"-"+f.name.replace(/[^\w.\-]/g,"_"),r=await sb.storage.from("art").upload(p,f);
@@ -265,4 +274,11 @@ function setLang(l){lang=l;try{localStorage.setItem("lang",l)}catch(e){}document
 new MutationObserver(ms=>{ms.forEach(m=>{if(m.type==="characterData")trT(m.target);else m.addedNodes.forEach(walk)})}).observe(document.body,{childList:true,characterData:true,subtree:true});
 document.documentElement.lang=lang;$("#langS").value=lang;walk(document.body);
 init();
+if(new URLSearchParams(location.search).get("stripe")==="success"){
+  history.replaceState({},document.title,location.pathname);
+  setTimeout(()=>toast("Stripe checkout completed. Payment status will update after Stripe confirms it."),1200);
+}else if(new URLSearchParams(location.search).get("stripe")==="cancel"){
+  history.replaceState({},document.title,location.pathname);
+  setTimeout(()=>toast("Payment cancelled. You can try again."),1200);
+}
 </script></body></html>
